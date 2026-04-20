@@ -1,0 +1,3 @@
+
+DB connection string: mongodb://localhost:27017/
+Cluster connection string: mongodb+srv://<groupAdmin>:<inl3781@/WAB>@cluster0.rvbqp5q.mongodb.net/
