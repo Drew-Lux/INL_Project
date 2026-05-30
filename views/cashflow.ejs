@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cashflow | Architect Wealth Suite</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <%- include('partials/navbar') %>
+    <main class="dashboard-container">
+      <div class="page-header flex-header">
+        <div>
+          <h2>Active Cashflow & Budgeting</h2>
+          <p class="subtitle">Analyze and manage your cash flow and budget</p>
+        </div>
+        <div class="sync-badge">
+          <span class="sync-dot">●</span>Live Sync: Investico Private
+        </div>
+      </div>
+
+      <section class="metrics-grid grid-3">
+        <div class="metric-card">
+          <div class="card-header">
+            <p class="metric-label">TOTAL INFLOW</p>
+            <span class="badge green-badge">● Inflow</span>
+          </div>
+          <h3 class="metric-value text-positive">+ R <%= data.inflow %></h3>
+        </div>
+
+        <div class="metric-card">
+          <div class="card-header">
+            <p class="metric-label">CASH OUTFLOW</p>
+          </div>
+          <h3 class="metric-value">- R <%= data.outflow %></h3>
+        </div>
+
+        <div class="metric-card card-dark">
+          <div class="card-header">
+            <p class="metric-label dark-label">NET CASHFLOW</p>
+          </div>
+          <h3 class="metric-value text-white">
+            <%= data.netIsPositive ? '+' : '-' %> R <%= data.net %>
+          </h3>
+        </div>
+      </section>
+
+      <section class="middle-layout">
+        <div class="content-card">
+          <div class="card-header-flex">
+            <h3 class="section-title">Budget Utilization</h3>
+          </div>
+
+          <!-- Note: Budget goals are hardcoded until we build a database! -->
+          <div class="budget-list">
+            <div class="budget-item">
+              <div class="budget-info">
+                <span class="tx-title">Housing & Utilities</span>
+                <span class="tx-subtitle">R 15,000 / R 18,000</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill fill-blue" style="width: 83%"></div>
+              </div>
+              <div class="progress-label">83%</div>
+            </div>
+
+            <div class="budget-item">
+              <div class="budget-info">
+                <span class="tx-title">Food & Dining</span>
+                <span class="tx-subtitle">⚠️ R 4,500 / R 5,000</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill fill-warning" style="width: 90%"></div>
+              </div>
+              <div class="progress-label">90%</div>
+            </div>
+
+            <div class="budget-item">
+              <div class="budget-info">
+                <span class="tx-title">Transport</span>
+                <span class="tx-subtitle">R 2,100 / R 3,000</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill fill-blue" style="width: 70%"></div>
+              </div>
+              <div class="progress-label">70%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="content-card">
+          <div class="card-header-flex">
+            <h3 class="section-title">Transaction Ledger</h3>
+            <div class="toggle-pill">
+              <button class="pill-btn active">ALL</button>
+              <button class="pill-btn">IN</button>
+              <button class="pill-btn">OUT</button>
+            </div>
+          </div>
+
+          <div class="transaction-list">
+            <% data.transactions.forEach(function(tx) { %>
+                <div class="transaction-item">
+                    <div class="icon-circle <%= tx.amount > 0 ? 'blue-light' : 'gray-light' %>">
+                        <%= tx.amount > 0 ? '🏢' : '💳' %>
+                    </div>
+                    <div class="tx-details">
+                        <p class="tx-title"><%= tx.merchant %></p>
+                        <p class="tx-subtitle"><%= tx.category %> • <%= tx.date %></p>
+                    </div>
+                    <div class="tx-amount <%= tx.amount > 0 ? 'positive-tx' : '' %>">
+                        <%= tx.amount > 0 ? '+' : '-' %> R <%= Math.abs(tx.amount).toLocaleString('en-ZA', { minimumFractionDigits: 2 }) %>
+                    </div>
+                </div>
+            <% }); %>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

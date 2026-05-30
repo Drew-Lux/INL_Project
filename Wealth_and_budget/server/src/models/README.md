@@ -1,1 +1,0 @@
-**MongoDB Schemas (User, Transaction, Account, Category, Advice)**

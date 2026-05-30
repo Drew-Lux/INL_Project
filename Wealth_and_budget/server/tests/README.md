@@ -1,1 +1,0 @@
-**Ai implementation details**
