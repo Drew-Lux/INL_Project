@@ -1,0 +1,7 @@
+const registerPersonBJobs = require('../config/Freddy');
+// inside your scheduler init:
+registerPersonBJobs(schedule);
+
+this is to register my jobs folder your scheduler controller
+
+Also please make sure you merge, don't override

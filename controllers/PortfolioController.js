@@ -12,7 +12,7 @@
  *   - Performance History chart (via PortfolioSnapshot)
  */
  
-const { Account, Holding, PortfolioSnapshotSchema } = require("../models/index");
+const { Account, Holding, PortfolioSnapshot } = require("../models/index");
  
 // ─── GET /portfolio ───────────────────────────────────────────────────────────
  

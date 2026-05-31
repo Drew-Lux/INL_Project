@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alerts — Architech Wealth Suite</title>
+  <link rel="stylesheet" href="/style.css"/>
+  <style>
+    .alerts-container { width: 100%; padding: 40px 48px; }
+    .alerts-layout { display: grid; grid-template-columns: 1fr 360px; gap: 24px; align-items: start; }
+
+    .alert-item {
+      display: flex; align-items: flex-start; gap: 16px;
+      padding: 20px 24px; border-bottom: 1px solid var(--border-light);
+      transition: background 0.15s; cursor: pointer;
+    }
+    .alert-item:last-child { border-bottom: none; }
+    .alert-item:hover { background: #f9fafb; }
+    .alert-item.unread { background: #eff6ff; }
+    .alert-item.unread:hover { background: #dbeafe; }
+
+    .alert-icon-wrap { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .icon-info     { background: #eff6ff; }
+    .icon-warning  { background: #fef3c7; }
+    .icon-critical { background: #fee2e2; }
+
+    .alert-body { flex: 1; }
+    .alert-title { font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
+    .alert-item.unread .alert-title { color: #1d4ed8; }
+    .alert-message { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+    .alert-time { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+    .unread-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary-blue); flex-shrink: 0; margin-top: 6px; }
+
+    .mark-all-btn { font-size: 13px; font-weight: 600; color: var(--primary-blue); background: none; border: none; cursor: pointer; padding: 0; }
+    .mark-all-btn:hover { text-decoration: underline; }
+
+    .config-section { margin-bottom: 28px; }
+    .config-section h4 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 16px; }
+    .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-light); }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-label { font-size: 14px; font-weight: 500; color: var(--text-main); }
+    .toggle-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; inset: 0; background: #e5e7eb; border-radius: 24px; transition: 0.2s; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    input:checked + .slider { background: var(--primary-blue); }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    .threshold-input { width: 70px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-light); font-size: 14px; font-weight: 600; text-align: center; }
+    .save-config-btn { width: 100%; padding: 12px; border-radius: 10px; border: none; background: var(--primary-blue); color: white; font-weight: 700; cursor: pointer; font-size: 14px; margin-top: 8px; transition: opacity 0.2s; }
+    .save-config-btn:hover { opacity: 0.9; }
+
+    .empty-alerts { text-align: center; padding: 60px 24px; color: var(--text-muted); }
+    .empty-alerts .empty-icon { font-size: 40px; margin-bottom: 12px; }
+
+    .toast { position: fixed; bottom: 32px; right: 32px; background: var(--text-main); color: white; padding: 14px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; z-index: 999; opacity: 0; transform: translateY(16px); transition: all 0.3s ease; pointer-events: none; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: #059669; }
+    .toast.error   { background: #dc2626; }
+  </style>
+</head>
+<body>
+  <%- include('partials/navbar') %>
+
+  <main class="alerts-container">
+    <div class="flex-header page-header">
+      <div>
+        <h2>Alerts</h2>
+        <p class="subtitle">Stay on top of your finances with smart notifications.</p>
+      </div>
+      <span id="unread-badge" class="badge blue-badge" style="display:none"></span>
+    </div>
+
+    <div class="alerts-layout">
+      <!-- Left: Alert Feed -->
+      <div class="content-card" style="padding:0;overflow:hidden;">
+        <div class="card-header-flex" style="padding:24px 24px 20px;">
+          <h3 class="section-title">Notifications</h3>
+          <button class="mark-all-btn" id="mark-all-btn">Mark all as read</button>
+        </div>
+        <div id="alerts-list">
+          <div class="empty-alerts">
+            <div class="empty-icon">🔔</div>
+            <p>No alerts yet. They'll appear here as your finances are monitored.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Config -->
+      <div class="content-card">
+        <h3 class="section-title" style="margin-bottom:24px;">Alert Settings</h3>
+
+        <div class="config-section">
+          <h4>Budget Alerts</h4>
+          <div class="toggle-row">
+            <div><p class="toggle-label">Budget warnings</p><p class="toggle-sub">Warn when nearing limit</p></div>
+            <label class="switch"><input type="checkbox" id="cfg-budget-enabled" checked><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><p class="toggle-label">Warn at</p></div>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <input class="threshold-input" type="number" id="cfg-warn-pct" value="80" min="1" max="99"/>
+              <span style="font-size:13px;color:var(--text-muted);">%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="config-section">
+          <h4>Anomaly Alerts</h4>
+          <div class="toggle-row">
+            <div><p class="toggle-label">Unusual spending</p><p class="toggle-sub">AI-flagged patterns</p></div>
+            <label class="switch"><input type="checkbox" id="cfg-anomaly-enabled" checked><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><p class="toggle-label">Large transactions</p></div>
+            <label class="switch"><input type="checkbox" id="cfg-large-tx" checked><span class="slider"></span></label>
+          </div>
+        </div>
+
+        <div class="config-section">
+          <h4>Goal Alerts</h4>
+          <div class="toggle-row">
+            <div><p class="toggle-label">Milestone reached</p></div>
+            <label class="switch"><input type="checkbox" id="cfg-milestone" checked><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><p class="toggle-label">Goal at risk</p><p class="toggle-sub">Behind schedule</p></div>
+            <label class="switch"><input type="checkbox" id="cfg-goal-risk" checked><span class="slider"></span></label>
+          </div>
+        </div>
+
+        <div class="config-section">
+          <h4>Delivery Channels</h4>
+          <div class="toggle-row">
+            <p class="toggle-label">In-app</p>
+            <label class="switch"><input type="checkbox" id="cfg-inapp" checked><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <p class="toggle-label">Email</p>
+            <label class="switch"><input type="checkbox" id="cfg-email"><span class="slider"></span></label>
+          </div>
+        </div>
+
+        <button class="save-config-btn" id="save-config-btn">Save Preferences</button>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    var ICONS = {
+      budget_warning:            { emoji: '⚠️',  cls: 'icon-warning'  },
+      budget_exceeded:           { emoji: '🚨',  cls: 'icon-critical' },
+      anomaly_large_transaction: { emoji: '💳',  cls: 'icon-warning'  },
+      anomaly_unusual_spending:  { emoji: '📊',  cls: 'icon-warning'  },
+      goal_milestone:            { emoji: '🏆',  cls: 'icon-info'     },
+      goal_completed:            { emoji: '✅',  cls: 'icon-info'     },
+      goal_at_risk:              { emoji: '⏰',  cls: 'icon-warning'  },
+      recurring_upcoming:        { emoji: '🔄',  cls: 'icon-info'     },
+      recurring_missed:          { emoji: '❌',  cls: 'icon-critical' },
+    };
+
+    // ── Mark all read ──────────────────────────────────────────────────────────
+    document.getElementById('mark-all-btn').addEventListener('click', async function() {
+      await fetch('/api/alerts/read', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      document.querySelectorAll('.alert-item').forEach(function(el) {
+        el.classList.remove('unread');
+        var dot = el.querySelector('.unread-dot');
+        if (dot) dot.remove();
+      });
+      document.getElementById('unread-badge').style.display = 'none';
+      showToast('All alerts marked as read', 'success');
+    });
+
+    // ── Mark single alert read (event delegation) ──────────────────────────────
+    document.getElementById('alerts-list').addEventListener('click', async function(e) {
+      var item = e.target.closest('.alert-item');
+      if (!item || !item.classList.contains('unread')) return;
+      var id = item.dataset.id;
+      await fetch('/api/alerts/read', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alertIds: [id] }),
+      });
+      item.classList.remove('unread');
+      var dot = item.querySelector('.unread-dot');
+      if (dot) dot.remove();
+    });
+
+    // ── Save config ────────────────────────────────────────────────────────────
+    document.getElementById('save-config-btn').addEventListener('click', async function() {
+      var config = {
+        budgetThreshold: {
+          enabled:     document.getElementById('cfg-budget-enabled').checked,
+          percentWarn: parseInt(document.getElementById('cfg-warn-pct').value),
+        },
+        anomalyAlerts: {
+          enabled:          document.getElementById('cfg-anomaly-enabled').checked,
+          largeTransaction: document.getElementById('cfg-large-tx').checked,
+        },
+        goalAlerts: {
+          milestoneReached: document.getElementById('cfg-milestone').checked,
+          goalAtRisk:       document.getElementById('cfg-goal-risk').checked,
+        },
+        channels: {
+          inApp: document.getElementById('cfg-inapp').checked,
+          email: document.getElementById('cfg-email').checked,
+        },
+      };
+      try {
+        var res  = await fetch('/api/alerts/config', {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(config),
+        });
+        var data = await res.json();
+        showToast(data.success ? 'Preferences saved ✅' : 'Save failed', data.success ? 'success' : 'error');
+      } catch(e) { showToast('Error saving.', 'error'); }
+    });
+
+    // ── Load alerts ────────────────────────────────────────────────────────────
+    async function loadAlerts() {
+      try {
+        var res  = await fetch('/api/alerts');
+        var data = await res.json();
+        if (!data.success) return;
+
+        var badge = document.getElementById('unread-badge');
+        if (data.unreadCount > 0) {
+          badge.textContent  = data.unreadCount + ' new';
+          badge.style.display = 'inline';
+        }
+
+        var list = document.getElementById('alerts-list');
+        if (!data.alerts || !data.alerts.length) return;
+
+        list.innerHTML = data.alerts.map(function(a) {
+          var icon = ICONS[a.type] || { emoji: '🔔', cls: 'icon-info' };
+          var time = new Date(a.createdAt).toLocaleString('en-ZA', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+          return [
+            '<div class="alert-item ' + (a.read ? '' : 'unread') + '" data-id="' + a._id + '">',
+              '<div class="alert-icon-wrap ' + icon.cls + '">' + icon.emoji + '</div>',
+              '<div class="alert-body">',
+                '<p class="alert-title">' + a.title + '</p>',
+                '<p class="alert-message">' + a.message + '</p>',
+                '<p class="alert-time">' + time + '</p>',
+              '</div>',
+              (!a.read ? '<div class="unread-dot"></div>' : ''),
+            '</div>',
+          ].join('');
+        }).join('');
+      } catch(e) { console.error(e); }
+    }
+
+    // ── Load config ────────────────────────────────────────────────────────────
+    async function loadConfig() {
+      try {
+        var res  = await fetch('/api/alerts/config');
+        var data = await res.json();
+        if (!data.success) return;
+        var c = data.config;
+        document.getElementById('cfg-budget-enabled').checked = c.budgetThreshold  && c.budgetThreshold.enabled  !== false;
+        document.getElementById('cfg-warn-pct').value         = (c.budgetThreshold  && c.budgetThreshold.percentWarn) || 80;
+        document.getElementById('cfg-anomaly-enabled').checked= c.anomalyAlerts    && c.anomalyAlerts.enabled    !== false;
+        document.getElementById('cfg-large-tx').checked       = c.anomalyAlerts    && c.anomalyAlerts.largeTransaction !== false;
+        document.getElementById('cfg-milestone').checked      = c.goalAlerts       && c.goalAlerts.milestoneReached   !== false;
+        document.getElementById('cfg-goal-risk').checked      = c.goalAlerts       && c.goalAlerts.goalAtRisk         !== false;
+        document.getElementById('cfg-inapp').checked          = c.channels         && c.channels.inApp           !== false;
+        document.getElementById('cfg-email').checked          = !!(c.channels      && c.channels.email);
+      } catch(e) { console.error(e); }
+    }
+
+    // ── Toast ──────────────────────────────────────────────────────────────────
+    function showToast(msg, type) {
+      var t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className   = 'toast show' + (type ? ' ' + type : '');
+      setTimeout(function(){ t.className = 'toast'; }, 3000);
+    }
+
+    loadAlerts();
+    loadConfig();
+  </script>
+</body>
+</html>

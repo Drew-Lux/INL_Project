@@ -129,8 +129,8 @@ exports.register = async (req, res) => {
     // Redirect to dashboard — the cookie will authenticate all future page loads
     return res.redirect("/");
   } catch (err) {
-    console.error("[authController.register]", err);
-    return res.redirect("/register?error=Registration+failed.+Please+try+again.");
+      console.error("[authController.register] FULL ERROR:", err.message, err.stack);
+      return res.redirect("/register?error=Registration+failed.+Please+try+again.");
   }
 };
  

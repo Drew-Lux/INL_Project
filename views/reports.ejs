@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports — Architech Wealth Suite</title>
+  <link rel="stylesheet" href="/style.css"/>
+  <style>
+    .reports-container { width: 100%; padding: 40px 48px; }
+    .reports-layout { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+
+    .report-types { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+    .report-type-card {
+      padding: 20px 24px; border-radius: 14px; border: 2px solid var(--border-light);
+      cursor: pointer; transition: all 0.2s; background: var(--bg-surface); user-select: none;
+    }
+    .report-type-card:hover { border-color: #93c5fd; background: #f0f9ff; }
+    .report-type-card.selected { border-color: var(--primary-blue); background: #eff6ff; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+    .report-type-icon { font-size: 24px; margin-bottom: 10px; }
+    .report-type-name { font-size: 14px; font-weight: 700; color: var(--text-main); }
+    .report-type-desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    .format-toggle { display: flex; gap: 12px; margin-bottom: 24px; }
+    .format-btn {
+      flex: 1; padding: 12px; border-radius: 10px; border: 2px solid var(--border-light);
+      background: none; font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s; color: var(--text-muted);
+    }
+    .format-btn:hover { border-color: #93c5fd; color: var(--primary-blue); }
+    .format-btn.selected { border-color: var(--primary-blue); background: #eff6ff; color: var(--primary-blue); }
+
+    .date-range { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .form-group label {
+      display: block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px;
+    }
+    .form-group input, .form-group select {
+      width: 100%; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border-light);
+      font-size: 14px; background: var(--bg-body); outline: none; transition: all 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus {
+      border-color: var(--primary-blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); background: var(--bg-surface);
+    }
+    .generate-btn {
+      width: 100%; padding: 14px; border-radius: 12px; border: none;
+      background: var(--primary-blue); color: white; font-weight: 700;
+      font-size: 15px; cursor: pointer; transition: opacity 0.2s; margin-top: 8px;
+    }
+    .generate-btn:hover { opacity: 0.9; }
+    .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .report-item { display: flex; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--border-light); }
+    .report-item:last-child { border-bottom: none; }
+    .report-file-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .icon-pdf { background: #fee2e2; }
+    .icon-csv { background: #d1fae5; }
+    .report-info { flex: 1; }
+    .report-name { font-size: 14px; font-weight: 600; color: var(--text-main); }
+    .report-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+    .report-status { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; }
+    .status-completed { background: #d1fae5; color: var(--trend-up); }
+    .status-pending   { background: #fef3c7; color: #d97706; }
+    .status-processing{ background: #dbeafe; color: #1d4ed8; }
+    .status-failed    { background: #fee2e2; color: #dc2626; }
+    .download-btn {
+      font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 8px;
+      border: 1px solid var(--border-light); background: none; cursor: pointer;
+      color: var(--primary-blue); text-decoration: none; display: inline-block; transition: all 0.2s;
+    }
+    .download-btn:hover { background: #eff6ff; border-color: var(--primary-blue); }
+    .empty-reports { text-align: center; padding: 40px; color: var(--text-muted); font-size: 14px; }
+
+    .section-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 12px; display: block;
+    }
+    .toast {
+      position: fixed; bottom: 32px; right: 32px; background: var(--text-main); color: white;
+      padding: 14px 20px; border-radius: 12px; font-size: 14px; font-weight: 600;
+      z-index: 999; opacity: 0; transform: translateY(16px); transition: all 0.3s ease; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: #059669; }
+    .toast.error   { background: #dc2626; }
+  </style>
+</head>
+<body>
+  <%- include('partials/navbar') %>
+
+  <main class="reports-container">
+    <div class="page-header">
+      <h2>Export & Reports</h2>
+      <p class="subtitle">Generate PDF summaries and CSV exports of your financial data.</p>
+    </div>
+
+    <div class="reports-layout">
+      <!-- Left: Generator -->
+      <div class="content-card">
+        <h3 class="section-title" style="margin-bottom:28px;">Generate Report</h3>
+
+        <span class="section-label">Report Type</span>
+        <div class="report-types" id="type-grid">
+          <div class="report-type-card selected" data-type="custom_range">
+            <div class="report-type-icon">📊</div>
+            <p class="report-type-name">Custom Range</p>
+            <p class="report-type-desc">Any date range you choose</p>
+          </div>
+          <div class="report-type-card" data-type="monthly_digest">
+            <div class="report-type-icon">📅</div>
+            <p class="report-type-name">Monthly Digest</p>
+            <p class="report-type-desc">Full month summary</p>
+          </div>
+          <div class="report-type-card" data-type="budget_variance">
+            <div class="report-type-icon">💰</div>
+            <p class="report-type-name">Budget Variance</p>
+            <p class="report-type-desc">Budget vs actual</p>
+          </div>
+          <div class="report-type-card" data-type="goal_summary">
+            <div class="report-type-icon">🎯</div>
+            <p class="report-type-name">Goal Summary</p>
+            <p class="report-type-desc">Progress on all goals</p>
+          </div>
+        </div>
+
+        <span class="section-label">Format</span>
+        <div class="format-toggle" id="format-toggle">
+          <button class="format-btn selected" data-format="pdf">📄 PDF</button>
+          <button class="format-btn" data-format="csv">📋 CSV</button>
+        </div>
+
+        <div class="date-range">
+          <div class="form-group">
+            <label>Start Date</label>
+            <input type="date" id="r-start"/>
+          </div>
+          <div class="form-group">
+            <label>End Date</label>
+            <input type="date" id="r-end"/>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:8px;">
+          <label>Currency</label>
+          <select id="r-currency">
+            <option value="ZAR">ZAR — South African Rand</option>
+            <option value="USD">USD — US Dollar</option>
+            <option value="EUR">EUR — Euro</option>
+            <option value="GBP">GBP — British Pound</option>
+          </select>
+        </div>
+
+        <button class="generate-btn" id="gen-btn">Generate Report</button>
+      </div>
+
+      <!-- Right: History -->
+      <div class="content-card">
+        <div class="card-header-flex" style="margin-bottom:20px;">
+          <h3 class="section-title">Recent Reports</h3>
+          <button id="refresh-btn" style="font-size:13px;font-weight:600;color:var(--primary-blue);background:none;border:none;cursor:pointer;">Refresh</button>
+        </div>
+        <div id="reports-list">
+          <div class="empty-reports">No reports yet.</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ── State ──────────────────────────────────────────────────────────────────
+    let selectedType   = 'custom_range';
+    let selectedFormat = 'pdf';
+
+    // ── Default dates ──────────────────────────────────────────────────────────
+    const today        = new Date();
+    const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    document.getElementById('r-start').value = firstOfMonth.toISOString().slice(0,10);
+    document.getElementById('r-end').value   = today.toISOString().slice(0,10);
+
+    // ── Type card selection ────────────────────────────────────────────────────
+    document.getElementById('type-grid').addEventListener('click', function(e) {
+      const card = e.target.closest('.report-type-card');
+      if (!card) return;
+      document.querySelectorAll('.report-type-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedType = card.dataset.type;
+    });
+
+    // ── Format button selection ────────────────────────────────────────────────
+    document.getElementById('format-toggle').addEventListener('click', function(e) {
+      const btn = e.target.closest('.format-btn');
+      if (!btn) return;
+      document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedFormat = btn.dataset.format;
+    });
+
+    // ── Generate ───────────────────────────────────────────────────────────────
+    document.getElementById('gen-btn').addEventListener('click', async function() {
+      const btn       = this;
+      const startDate = document.getElementById('r-start').value;
+      const endDate   = document.getElementById('r-end').value;
+
+      if (!startDate || !endDate) {
+        showToast('Please select a date range.', 'error'); return;
+      }
+      if (new Date(startDate) > new Date(endDate)) {
+        showToast('Start date must be before end date.', 'error'); return;
+      }
+
+      btn.disabled    = true;
+      btn.textContent = 'Generating...';
+
+      try {
+        const res  = await fetch('/api/reports/generate', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type:   selectedType,
+            format: selectedFormat,
+            parameters: {
+              startDate,
+              endDate,
+              currency: document.getElementById('r-currency').value,
+            },
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Report queued! Check the list in a moment.', 'success');
+          setTimeout(loadReports, 2500);
+        } else {
+          showToast(data.message || 'Generation failed.', 'error');
+        }
+      } catch(err) {
+        showToast('Network error. Try again.', 'error');
+      } finally {
+        btn.disabled    = false;
+        btn.textContent = 'Generate Report';
+      }
+    });
+
+    // ── Refresh button ─────────────────────────────────────────────────────────
+    document.getElementById('refresh-btn').addEventListener('click', loadReports);
+
+    // ── Load reports list ──────────────────────────────────────────────────────
+    async function loadReports() {
+      try {
+        const res  = await fetch('/api/reports');
+        const data = await res.json();
+        if (!data.success) return;
+
+        const list = document.getElementById('reports-list');
+        if (!data.reports || !data.reports.length) {
+          list.innerHTML = '<div class="empty-reports">No reports generated yet.</div>';
+          return;
+        }
+
+        list.innerHTML = data.reports.map(function(r) {
+          const isPdf  = r.format === 'pdf';
+          const icon   = isPdf ? { emoji: '📄', cls: 'icon-pdf' } : { emoji: '📋', cls: 'icon-csv' };
+          const date   = new Date(r.createdAt).toLocaleDateString('en-ZA', { day:'numeric', month:'short', year:'numeric' });
+          const name   = r.type.replace(/_/g,' ').replace(/\b\w/g, function(l){ return l.toUpperCase(); });
+          const dlBtn  = r.status === 'completed'
+            ? '<a class="download-btn" href="/api/reports/' + r._id + '/download" download>Download</a>'
+            : '';
+          return [
+            '<div class="report-item">',
+              '<div class="report-file-icon ' + icon.cls + '">' + icon.emoji + '</div>',
+              '<div class="report-info">',
+                '<p class="report-name">' + name + '</p>',
+                '<p class="report-meta">' + r.format.toUpperCase() + ' &bull; ' + date + '</p>',
+              '</div>',
+              '<span class="report-status status-' + r.status + '">' + r.status + '</span>',
+              dlBtn,
+            '</div>',
+          ].join('');
+        }).join('');
+      } catch(err) {
+        console.error('loadReports error:', err);
+      }
+    }
+
+    // ── Toast helper ───────────────────────────────────────────────────────────
+    function showToast(msg, type) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className   = 'toast show' + (type ? ' ' + type : '');
+      setTimeout(function() { t.className = 'toast'; }, 3500);
+    }
+
+    loadReports();
+  </script>
+</body>
+</html>

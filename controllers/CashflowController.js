@@ -10,7 +10,7 @@
  *   - Budget Utilization progress bars (now dynamic, not hardcoded)
  *   - Transaction Ledger with ALL / IN / OUT filter
  */
-const { TransactionSchema, BudgetCategorySchema, Account } = require("../models/index");
+const { Transaction, BudgetCategory, Account } = require("../models/index");
 // ─── Category Auto-Assignment ─────────────────────────────────────────────────
 // Flowchart: "Add Transaction → Auto-Assign Category" (s35 → s36)
 // Simple keyword-matching engine. Replace with an ML model or Yodlee's own
