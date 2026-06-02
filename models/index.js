@@ -7,6 +7,9 @@ const PortfolioSnapshotSchema = require("./Portfolio");
 const User = require("./User");
 const Account = require("./Account");
 const Holding = require("./Holding");
+const RecurringTransaction = require("./RecurringTransaction");
+const AuditLog = require("./AuditLog");
+const ScheduledTask = require("./ScheduledTask");
 
 module.exports = {
     User,
@@ -14,5 +17,8 @@ module.exports = {
     TransactionSchema,
     Holding,
     BudgetCategorySchema,
-    PortfolioSnapshotSchema
+    PortfolioSnapshotSchema,
+    RecurringTransaction,
+    AuditLog,
+    ScheduledTask,
 }
