@@ -3,6 +3,8 @@ const path = require("path");
 require("dotenv").config();
 const axios = require("axios"); // Used to call Yodlee / Stitch
 const express = require("express");
+const registerRoutes = require("../routes");
+const { initScheduler } = require("../controllers/SchedulerController");
 
 const checkBudgetThresholds  = require('../jobs/checkBudgetThresholds');
 const checkAnomalies          = require('../jobs/checkAnomalies');
@@ -21,7 +23,7 @@ const rateLimit     = require("express-rate-limit"); // Brute-force protection
 const cookieParser  = require("cookie-parser");   // Reads httpOnly auth cookie set on login
  
 // ── NEW: Modular routes (replaces the inline app.get handlers below) ──────────
-const registerRoutes = require("../routes");
+
  
 const app = express();
 app.use(express.json());
@@ -339,7 +341,9 @@ const start = async () => {
       serverSelectionTimeoutMS: 5000, // Fail fast if Mongo is unreachable
     });
     console.log(`MongoDB connected → ${mongoose.connection.host}`);
- 
+
+    await initScheduler();
+
     const server = app.listen(PORT, () => {
       console.log(`Server is running at http://localhost:${PORT}`);
     });

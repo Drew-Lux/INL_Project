@@ -9,7 +9,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",
     "axios": "^1.15.0",
@@ -25,10 +24,20 @@
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.6.2",
+    "node-cron": "^4.2.1",
     "pdfkit": "^0.18.0",
     "speakeasy": "^2.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Drew-Lux/INL_Project.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Drew-Lux/INL_Project/issues"
+  },
+  "homepage": "https://github.com/Drew-Lux/INL_Project#readme",
+  "description": ""
 }
