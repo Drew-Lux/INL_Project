@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audit Log — Architech Wealth Suite</title>
+  <link rel="stylesheet" href="/style.css"/>
+  <style>
+    .audit-container { width: 100%; padding: 40px 48px; }
+
+    /* Filters */
+    .filter-bar {
+      display: flex; gap: 12px; align-items: flex-end;
+      margin-bottom: 24px; flex-wrap: wrap;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 6px; }
+    .filter-group label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--text-muted);
+    }
+    .filter-select, .filter-input {
+      padding: 10px 14px; border-radius: 10px;
+      border: 1px solid var(--border-light); font-size: 13px;
+      background: var(--bg-surface); outline: none; min-width: 140px;
+      transition: border-color 0.2s;
+    }
+    .filter-select:focus, .filter-input:focus { border-color: var(--primary-blue); }
+    .filter-btn {
+      padding: 10px 20px; border-radius: 10px; border: none;
+      background: var(--primary-blue); color: white;
+      font-weight: 700; font-size: 13px; cursor: pointer;
+      align-self: flex-end; transition: opacity 0.2s;
+    }
+    .filter-btn:hover { opacity: 0.9; }
+
+    /* Table */
+    .audit-table-wrap { overflow-x: auto; }
+    table {
+      width: 100%; border-collapse: collapse; font-size: 13px;
+    }
+    thead tr {
+      border-bottom: 2px solid var(--border-light);
+    }
+    th {
+      text-align: left; padding: 12px 16px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--text-muted);
+    }
+    td { padding: 14px 16px; border-bottom: 1px solid var(--border-light); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9fafb; }
+
+    .action-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+    }
+    .action-CREATE  { background: #d1fae5; color: var(--trend-up); }
+    .action-UPDATE  { background: #dbeafe; color: #1d4ed8; }
+    .action-DELETE  { background: #fee2e2; color: #dc2626; }
+    .action-RESTORE { background: #fef3c7; color: #d97706; }
+    .action-EXPORT  { background: #f3f4f6; color: var(--text-muted); }
+    .action-LOGIN   { background: #ede9fe; color: #7c3aed; }
+
+    .resource-tag {
+      font-size: 12px; font-weight: 600; color: var(--text-muted);
+      background: #f3f4f6; padding: 2px 8px; border-radius: 6px;
+    }
+    .diff-list { margin: 0; padding: 0; list-style: none; }
+    .diff-list li { font-size: 12px; color: var(--text-muted); }
+    .diff-list li span.old { color: #dc2626; text-decoration: line-through; }
+    .diff-list li span.new { color: var(--trend-up); }
+
+    /* Restore button */
+    .restore-btn {
+      font-size: 11px; font-weight: 700; padding: 5px 12px;
+      border-radius: 8px; border: 1px solid var(--border-light);
+      background: none; cursor: pointer; color: #d97706;
+      transition: all 0.2s;
+    }
+    .restore-btn:hover { background: #fef3c7; border-color: #d97706; }
+
+    /* Pagination */
+    .pagination {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 24px; font-size: 13px; color: var(--text-muted);
+    }
+    .page-btns { display: flex; gap: 8px; }
+    .page-btn {
+      padding: 8px 14px; border-radius: 8px;
+      border: 1px solid var(--border-light); background: var(--bg-surface);
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .page-btn:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
+    .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .empty-audit { text-align: center; padding: 60px; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <%- include('partials/navbar') %>
+
+  <main class="audit-container">
+    <div class="page-header">
+      <h2>Audit Trail</h2>
+      <p class="subtitle">A complete record of every change made to your financial data.</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="content-card" style="margin-bottom:24px;padding:24px;">
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label>Action</label>
+          <select class="filter-select" id="f-action">
+            <option value="">All Actions</option>
+            <option value="CREATE">Create</option>
+            <option value="UPDATE">Update</option>
+            <option value="DELETE">Delete</option>
+            <option value="RESTORE">Restore</option>
+            <option value="EXPORT">Export</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Resource</label>
+          <select class="filter-select" id="f-resource">
+            <option value="">All Resources</option>
+            <option value="Goal">Goal</option>
+            <option value="Transaction">Transaction</option>
+            <option value="Report">Report</option>
+            <option value="Budget">Budget</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>From</label>
+          <input type="date" class="filter-input" id="f-start"/>
+        </div>
+        <div class="filter-group">
+          <label>To</label>
+          <input type="date" class="filter-input" id="f-end"/>
+        </div>
+        <button class="filter-btn" onclick="loadLogs(1)">Apply</button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="content-card" style="padding:0;overflow:hidden;">
+      <div class="audit-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Action</th>
+              <th>Resource</th>
+              <th>Changes</th>
+              <th>IP</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="audit-tbody">
+            <tr><td colspan="6" class="empty-audit">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination">
+      <span id="page-info">—</span>
+      <div class="page-btns">
+        <button class="page-btn" id="btn-prev" onclick="changePage(-1)" disabled>← Prev</button>
+        <button class="page-btn" id="btn-next" onclick="changePage(1)">Next →</button>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let currentPage = 1;
+    const limit     = 20;
+
+    async function loadLogs(page = 1) {
+      currentPage = page;
+      const action   = document.getElementById('f-action').value;
+      const resource = document.getElementById('f-resource').value;
+      const start    = document.getElementById('f-start').value;
+      const end      = document.getElementById('f-end').value;
+
+      const params = new URLSearchParams({ page, limit });
+      if (action)   params.set('action',    action);
+      if (resource) params.set('resource',  resource);
+      if (start)    params.set('startDate', start);
+      if (end)      params.set('endDate',   end);
+
+      try {
+        const res  = await fetch(`/api/audit-log?${params}`);
+        const data = await res.json();
+        if (!data.success) return;
+
+        const tbody = document.getElementById('audit-tbody');
+        if (!data.logs.length) {
+          tbody.innerHTML = `<tr><td colspan="6" class="empty-audit">No audit entries found.</td></tr>`;
+          document.getElementById('page-info').textContent = '0 entries';
+          return;
+        }
+
+        tbody.innerHTML = data.logs.map(log => {
+          const ts = new Date(log.createdAt).toLocaleString('en-ZA', {
+            day:'numeric', month:'short', year:'numeric',
+            hour:'2-digit', minute:'2-digit',
+          });
+          const diffs = (log.diff || []).slice(0, 3).map(d =>
+            `<li>${d.field}: <span class="old">${JSON.stringify(d.oldValue)}</span> → <span class="new">${JSON.stringify(d.newValue)}</span></li>`
+          ).join('');
+          const restoreBtn = log.action === 'DELETE'
+            ? `<button class="restore-btn" onclick="restore('${log.resource}','${log.resourceId}')">Restore</button>`
+            : '';
+          return `
+          <tr>
+            <td style="white-space:nowrap;color:var(--text-muted)">${ts}</td>
+            <td><span class="action-badge action-${log.action}">${log.action}</span></td>
+            <td><span class="resource-tag">${log.resource}</span></td>
+            <td>${diffs ? `<ul class="diff-list">${diffs}</ul>` : '<span style="color:var(--text-muted)">—</span>'}</td>
+            <td style="color:var(--text-muted)">${log.ipAddress || '—'}</td>
+            <td>${restoreBtn}</td>
+          </tr>`;
+        }).join('');
+
+        document.getElementById('page-info').textContent =
+          `Page ${data.page} of ${data.pages} (${data.total} entries)`;
+        document.getElementById('btn-prev').disabled = page <= 1;
+        document.getElementById('btn-next').disabled = page >= data.pages;
+      } catch(e) { console.error(e); }
+    }
+
+    function changePage(delta) { loadLogs(currentPage + delta); }
+
+    async function restore(resourceType, resourceId) {
+      if (!confirm(`Restore this deleted ${resourceType}?`)) return;
+      try {
+        const res  = await fetch(`/api/audit-log/restore/${resourceType}/${resourceId}`, { method: 'POST' });
+        const data = await res.json();
+        showToast(data.success ? `${resourceType} restored ✅` : 'Restore failed: ' + data.message);
+        if (data.success) loadLogs(currentPage);
+      } catch(e) { showToast('Error restoring.'); }
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3500);
+    }
+
+    loadLogs();
+  </script>
+</body>
+</html>

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Goals — Architech Wealth Suite</title>
+  <link rel="stylesheet" href="/style.css"/>
+  <style>
+    .goals-container { width: 100%; padding: 40px 48px; }
+
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4); z-index: 200;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--bg-surface); border-radius: 20px;
+      padding: 40px; width: 480px; max-width: 95vw;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    }
+    .modal h3 { font-size: 20px; font-weight: 700; margin-bottom: 24px; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label {
+      display: block; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.8px;
+      color: var(--text-muted); margin-bottom: 8px;
+    }
+    .form-group input, .form-group select {
+      width: 100%; padding: 12px 16px; border-radius: 10px;
+      border: 1px solid var(--border-light); font-size: 15px;
+      background: var(--bg-body); outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus {
+      border-color: var(--primary-blue);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+      background: var(--bg-surface);
+    }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .modal-actions { display: flex; gap: 12px; margin-top: 32px; }
+    .btn-cancel {
+      flex: 1; padding: 12px; border-radius: 10px;
+      border: 1px solid var(--border-light); background: none;
+      font-weight: 600; cursor: pointer; color: var(--text-muted);
+    }
+    .btn-save {
+      flex: 2; padding: 12px; border-radius: 10px; border: none;
+      background: var(--primary-blue); color: white;
+      font-weight: 700; cursor: pointer; font-size: 14px;
+      transition: opacity 0.2s;
+    }
+    .btn-save:hover { opacity: 0.9; }
+
+    .goals-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 24px; margin-top: 8px;
+    }
+    .goal-card {
+      background: var(--bg-surface); border: 1px solid var(--border-light);
+      border-radius: 16px; padding: 28px;
+      box-shadow: 0 4px 6px -4px rgba(0,0,0,0.02);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .goal-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
+    .goal-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+    .goal-category-badge {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; padding: 4px 10px; border-radius: 20px;
+      background: #eff6ff; color: var(--primary-blue);
+    }
+    .goal-title { font-size: 17px; font-weight: 700; color: var(--text-main); margin-bottom: 6px; letter-spacing: -0.3px; }
+    .goal-target { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; }
+    .goal-amount-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+    .goal-current { font-size: 22px; font-weight: 800; color: var(--text-main); }
+    .goal-total { font-size: 13px; color: var(--text-muted); }
+    .goal-progress-track { width: 100%; height: 8px; background: #f3f4f6; border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
+    .goal-progress-fill { height: 100%; border-radius: 6px; background: var(--primary-blue); transition: width 0.6s ease; }
+    .goal-progress-fill.warning { background: #f59e0b; }
+    .goal-progress-fill.complete { background: var(--trend-up); }
+    .goal-percent { font-size: 11px; font-weight: 700; color: var(--text-muted); text-align: right; }
+    .goal-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-light);
+    }
+    .goal-days { font-size: 12px; color: var(--text-muted); }
+    .goal-status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--trend-up); display: inline-block; margin-right: 6px; }
+    .goal-status-dot.paused { background: #f59e0b; }
+    .goal-status-dot.completed { background: var(--primary-blue); }
+    .milestone-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .milestone-chip { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 12px; background: #f3f4f6; color: var(--text-muted); }
+    .milestone-chip.reached { background: #d1fae5; color: var(--trend-up); }
+    .empty-state { text-align: center; padding: 80px 40px; grid-column: 1 / -1; }
+    .empty-icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-state h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .empty-state p { color: var(--text-muted); font-size: 14px; }
+    .update-btn {
+      font-size: 11px; font-weight: 700; padding: 6px 12px; border-radius: 8px;
+      border: 1px solid var(--border-light); background: none; cursor: pointer;
+      color: var(--primary-blue); transition: all 0.2s;
+    }
+    .update-btn:hover { background: #eff6ff; border-color: var(--primary-blue); }
+    .new-goal-btn {
+      padding: 12px 24px; border-radius: 10px; border: none;
+      background: var(--primary-blue); color: white;
+      font-weight: 700; font-size: 14px; cursor: pointer; transition: opacity 0.2s;
+    }
+    .new-goal-btn:hover { opacity: 0.9; }
+    .toast {
+      position: fixed; bottom: 32px; right: 32px; background: var(--text-main); color: white;
+      padding: 14px 20px; border-radius: 12px; font-size: 14px; font-weight: 600;
+      z-index: 999; opacity: 0; transform: translateY(16px); transition: all 0.3s ease; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: #059669; }
+    .toast.error   { background: #dc2626; }
+  </style>
+</head>
+<body>
+  <%- include('partials/navbar') %>
+
+  <main class="goals-container">
+    <div class="flex-header page-header">
+      <div>
+        <h2>Financial Goals</h2>
+        <p class="subtitle">Track your progress toward what matters most.</p>
+      </div>
+      <button class="new-goal-btn" id="open-modal-btn">+ New Goal</button>
+    </div>
+
+    <div class="metrics-grid" style="grid-template-columns: repeat(3,1fr); margin-bottom:32px;">
+      <div class="metric-card">
+        <p class="metric-label">Active Goals</p>
+        <div class="value-row"><h3 class="metric-value" id="stat-active">—</h3></div>
+        <p class="trend-text neutral">Currently tracking</p>
+      </div>
+      <div class="metric-card">
+        <p class="metric-label">Completed</p>
+        <div class="value-row"><h3 class="metric-value" id="stat-completed">—</h3></div>
+        <p class="trend-text positive">Well done!</p>
+      </div>
+      <div class="metric-card">
+        <p class="metric-label">Avg. Progress</p>
+        <div class="value-row">
+          <h3 class="metric-value" id="stat-avg">—</h3>
+          <span class="value-subtext">%</span>
+        </div>
+        <p class="trend-text neutral">Across active goals</p>
+      </div>
+    </div>
+
+    <div class="goals-grid" id="goals-grid">
+      <div class="empty-state">
+        <div class="empty-icon">🎯</div>
+        <h3>No goals yet</h3>
+        <p>Create your first financial goal to start tracking progress.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Create Goal Modal -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" id="modal-box">
+      <h3>Create New Goal</h3>
+      <div class="form-group">
+        <label>Goal Title</label>
+        <input type="text" id="f-title" placeholder="e.g. Emergency Fund"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Target Amount</label>
+          <input type="number" id="f-amount" placeholder="10000"/>
+        </div>
+        <div class="form-group">
+          <label>Currency</label>
+          <select id="f-currency">
+            <option value="ZAR">ZAR</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Category</label>
+          <select id="f-category">
+            <option value="savings">Savings</option>
+            <option value="debt_payoff">Debt Payoff</option>
+            <option value="investment">Investment</option>
+            <option value="emergency_fund">Emergency Fund</option>
+            <option value="purchase">Purchase</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Target Date</label>
+          <input type="date" id="f-date"/>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="close-modal-btn">Cancel</button>
+        <button class="btn-save" id="create-goal-btn">Create Goal</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    var goals = [];
+
+    // ── Modal ──────────────────────────────────────────────────────────────────
+    document.getElementById('open-modal-btn').addEventListener('click', function() {
+      document.getElementById('modal-overlay').classList.add('open');
+    });
+    document.getElementById('close-modal-btn').addEventListener('click', function() {
+      document.getElementById('modal-overlay').classList.remove('open');
+    });
+    document.getElementById('modal-overlay').addEventListener('click', function(e) {
+      if (e.target === this) this.classList.remove('open');
+    });
+    // Stop clicks inside modal from closing it
+    document.getElementById('modal-box').addEventListener('click', function(e) {
+      e.stopPropagation();
+    });
+
+    // ── Create goal ────────────────────────────────────────────────────────────
+    document.getElementById('create-goal-btn').addEventListener('click', async function() {
+      var title        = document.getElementById('f-title').value.trim();
+      var targetAmount = parseFloat(document.getElementById('f-amount').value);
+      var currency     = document.getElementById('f-currency').value;
+      var category     = document.getElementById('f-category').value;
+      var targetDate   = document.getElementById('f-date').value;
+
+      if (!title)           { showToast('Please enter a goal title.', 'error'); return; }
+      if (!targetAmount)    { showToast('Please enter a target amount.', 'error'); return; }
+
+      var body = { title: title, targetAmount: targetAmount, currency: currency, category: category };
+      if (targetDate) body.targetDate = targetDate;
+
+      try {
+        var res  = await fetch('/api/goals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        var data = await res.json();
+        if (!data.success) { showToast('Failed to create goal.', 'error'); return; }
+        document.getElementById('modal-overlay').classList.remove('open');
+        document.getElementById('f-title').value  = '';
+        document.getElementById('f-amount').value = '';
+        document.getElementById('f-date').value   = '';
+        showToast('Goal created! 🎯', 'success');
+        loadGoals();
+      } catch(e) {
+        showToast('Error creating goal.', 'error');
+      }
+    });
+
+    // ── Update progress (event delegation on goals grid) ───────────────────────
+    document.getElementById('goals-grid').addEventListener('click', async function(e) {
+      var btn = e.target.closest('.update-btn');
+      if (!btn) return;
+      var id      = btn.dataset.id;
+      var current = btn.dataset.current;
+      var val     = prompt('Enter new current amount (was ' + current + '):');
+      if (val === null || val === '') return;
+      var amount = parseFloat(val);
+      if (isNaN(amount)) { showToast('Invalid amount.', 'error'); return; }
+      try {
+        var res  = await fetch('/api/goals/' + id + '/progress', {
+          method:  'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ amount: amount }),
+        });
+        var data = await res.json();
+        if (!data.success) { showToast('Update failed.', 'error'); return; }
+        showToast('Progress updated! ✅', 'success');
+        loadGoals();
+      } catch(e) {
+        showToast('Error updating.', 'error');
+      }
+    });
+
+    // ── Load & render goals ────────────────────────────────────────────────────
+    async function loadGoals() {
+      try {
+        var res  = await fetch('/api/goals');
+        var data = await res.json();
+        if (!data.success) return;
+        goals = data.goals;
+        renderGoals();
+        renderStats();
+      } catch(e) { console.error(e); }
+    }
+
+    function renderStats() {
+      var active    = goals.filter(function(g){ return g.status === 'active'; });
+      var completed = goals.filter(function(g){ return g.status === 'completed'; });
+      var avgPct    = active.length
+        ? Math.round(active.reduce(function(s,g){ return s + (g.progressPercent||0); }, 0) / active.length)
+        : 0;
+      document.getElementById('stat-active').textContent    = active.length;
+      document.getElementById('stat-completed').textContent = completed.length;
+      document.getElementById('stat-avg').textContent       = avgPct;
+    }
+
+    function renderGoals() {
+      var grid = document.getElementById('goals-grid');
+      if (!goals.length) {
+        grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🎯</div><h3>No goals yet</h3><p>Create your first financial goal to start tracking progress.</p></div>';
+        return;
+      }
+      grid.innerHTML = goals.map(function(g) {
+        var pct       = g.progressPercent || 0;
+        var fillClass = g.status === 'completed' ? 'complete' : pct >= 80 ? 'warning' : '';
+        var daysLeft  = g.daysRemaining != null
+          ? (g.daysRemaining > 0 ? g.daysRemaining + ' days left' : 'Overdue')
+          : 'No deadline';
+        var milestones = (g.milestones || []).map(function(m) {
+          return '<span class="milestone-chip ' + (m.reached ? 'reached' : '') + '">' + m.title + '</span>';
+        }).join('');
+        return [
+          '<div class="goal-card">',
+            '<div class="goal-card-header">',
+              '<span class="goal-category-badge">' + g.category.replace('_',' ') + '</span>',
+              '<span class="goal-status-dot ' + g.status + '"></span>',
+            '</div>',
+            '<p class="goal-title">' + g.title + '</p>',
+            '<p class="goal-target">Target: ' + g.currency + ' ' + Number(g.targetAmount).toLocaleString() + '</p>',
+            '<div class="goal-amount-row">',
+              '<span class="goal-current">' + g.currency + ' ' + Number(g.currentAmount).toLocaleString() + '</span>',
+              '<span class="goal-total">of ' + Number(g.targetAmount).toLocaleString() + '</span>',
+            '</div>',
+            '<div class="goal-progress-track">',
+              '<div class="goal-progress-fill ' + fillClass + '" style="width:' + pct + '%"></div>',
+            '</div>',
+            '<p class="goal-percent">' + pct + '%</p>',
+            milestones ? '<div class="milestone-list">' + milestones + '</div>' : '',
+            '<div class="goal-footer">',
+              '<span class="goal-days">📅 ' + daysLeft + '</span>',
+              '<button class="update-btn" data-id="' + g._id + '" data-current="' + g.currentAmount + '">Update Progress</button>',
+            '</div>',
+          '</div>',
+        ].join('');
+      }).join('');
+    }
+
+    // ── Toast ──────────────────────────────────────────────────────────────────
+    function showToast(msg, type) {
+      var t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className   = 'toast show' + (type ? ' ' + type : '');
+      setTimeout(function(){ t.className = 'toast'; }, 3000);
+    }
+
+    loadGoals();
+  </script>
+</body>
+</html>

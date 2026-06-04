@@ -10,7 +10,7 @@
  *   - Budget Utilization progress bars (now dynamic, not hardcoded)
  *   - Transaction Ledger with ALL / IN / OUT filter
  */
-const { TransactionSchema, BudgetCategorySchema, Account } = require("../models/index");
+const { Transaction, BudgetCategory, Account } = require("../models/index");
 // ─── Category Auto-Assignment ─────────────────────────────────────────────────
 // Flowchart: "Add Transaction → Auto-Assign Category" (s35 → s36)
 // Simple keyword-matching engine. Replace with an ML model or Yodlee's own
@@ -114,7 +114,7 @@ const cashFlowController = {
       const startDate = new Date(year, month - 1, 1);
       const endDate   = new Date(year, month, 0, 23, 59, 59);
  
-      const transactions = await TransactionSchema.find({
+      const transactions = await Transaction.find({
         userId,
         date:   { $gte: startDate, $lte: endDate },
         status: "POSTED",
@@ -146,7 +146,7 @@ const cashFlowController = {
  
       const netCashflow = totalInflow + totalOutflow;
  
-      const budgets = await BudgetCategorySchema.find({ userId, month, year }).lean();
+      const budgets = await BudgetCategory.find({ userId, month, year }).lean();
  
       const budgetUtilization = budgets.map((budget) => {
         const spent = transactions
@@ -197,7 +197,7 @@ const cashFlowController = {
       const autoCategory  = autoAssignCategory(merchantName);
       const finalCategory = category || autoCategory;
  
-      const transaction = await TransactionSchema.create({
+      const transaction = await Transaction.create({
         userId,
         accountId,
         description:      { simple: merchantName, original: originalDescription || merchantName },
@@ -234,12 +234,12 @@ const cashFlowController = {
       }
  
       const [transactions, total] = await Promise.all([
-        TransactionSchema.find(filter)
+        Transaction.find(filter)
           .sort({ date: -1 })
           .skip((page - 1) * limit)
           .limit(parseInt(limit))
           .lean(),
-        TransactionSchema.countDocuments(filter),
+        Transaction.countDocuments(filter),
       ]);
  
       return res.status(200).json({
@@ -260,7 +260,7 @@ const cashFlowController = {
  
       if (!category) return res.status(400).json({ error: "category is required." });
  
-      const tx = await TransactionSchema.findOneAndUpdate(
+      const tx = await Transaction.findOneAndUpdate(
         { _id: id, userId },
         { category, categoryIsManual: true },
         { new: true }
@@ -281,7 +281,7 @@ const cashFlowController = {
       const month  = parseInt(req.query.month) || now.getMonth() + 1;
       const year   = parseInt(req.query.year)  || now.getFullYear();
  
-      const budgets = await BudgetCategorySchema.find({ userId, month, year }).lean();
+      const budgets = await BudgetCategory.find({ userId, month, year }).lean();
       return res.status(200).json({ budgets });
     } catch (err) {
       console.error("[cashflowController.getBudgets]", err);
@@ -298,7 +298,7 @@ const cashFlowController = {
         return res.status(400).json({ error: "name, budgetedAmount, month, and year are required." });
       }
  
-      const budget = await BudgetCategorySchema.create({
+      const budget = await BudgetCategory.create({
         userId, name, budgetedAmount,
         transactionCategories: transactionCategories || [],
         month, year,
@@ -322,7 +322,7 @@ const cashFlowController = {
         Object.entries(req.body).filter(([k]) => allowed.includes(k))
       );
  
-      const budget = await BudgetCategorySchema.findOneAndUpdate(
+      const budget = await BudgetCategory.findOneAndUpdate(
         { _id: id, userId },
         sanitized,
         { new: true }
@@ -341,7 +341,7 @@ const cashFlowController = {
       const { id } = req.params;
       const userId = req.user.id;
  
-      const budget = await BudgetCategorySchema.findOneAndDelete({ _id: id, userId });
+      const budget = await BudgetCategory.findOneAndDelete({ _id: id, userId });
       if (!budget) return res.status(404).json({ error: "Budget not found." });
       return res.status(200).json({ message: "Budget deleted." });
     } catch (err) {

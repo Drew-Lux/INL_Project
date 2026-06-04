@@ -18,8 +18,7 @@
 const {
   User,
   Account,
-  TransactionSchema,
-  PortfolioSnapshotSchema,
+  Transaction,
 } = require("../models/index");
  
 

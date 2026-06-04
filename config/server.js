@@ -3,6 +3,17 @@ const path = require("path");
 require("dotenv").config();
 const axios = require("axios"); // Used to call Yodlee / Stitch
 const express = require("express");
+const registerRoutes = require("../routes");
+const { initScheduler } = require("../controllers/SchedulerController");
+
+const checkBudgetThresholds  = require('../jobs/checkBudgetThresholds');
+const checkAnomalies          = require('../jobs/checkAnomalies');
+const generateMonthlyReports  = require('../jobs/generateMonthlyReports');
+const FredsBPageRoute           = require('../routes/FredsBPageRoute');
+
+/**
+ * @param {import('node-schedule')} schedule
+ */
  
 // ── NEW: Production-grade middleware ──────────────────────────────────────────
 const mongoose  = require("mongoose");   // Replaces fs.readFileSync JSON files
@@ -12,8 +23,7 @@ const rateLimit     = require("express-rate-limit"); // Brute-force protection
 const cookieParser  = require("cookie-parser");   // Reads httpOnly auth cookie set on login
  
 // ── NEW: Modular routes (replaces the inline app.get handlers below) ──────────
-const registerRoutes    = require("./routes");
-const { initScheduler } = require("./controllers/SchedulerController");
+
  
 const app = express();
 app.use(express.json());
@@ -152,7 +162,47 @@ async function getTransactions(userToken) {
   }
 }
  
+function registerPersonBJobs(schedule) {
+  // ── Hourly: budget threshold checks (at minute 5) ──────────────────────────
+  schedule.scheduleJob('5 * * * *', async () => {
+    try { await checkBudgetThresholds(); }
+    catch (err) { console.error('[Freddy] checkBudgetThresholds error:', err.message); }
+  });
+
+  // ── Hourly: anomaly alert dispatch (at minute 10) ──────────────────────────
+  schedule.scheduleJob('10 * * * *', async () => {
+    try { await checkAnomalies(); }
+    catch (err) { console.error('[Freddy] checkAnomalies error:', err.message); }
+  });
+
+  // ── Daily 08:00: goals at risk check ──────────────────────────────────────
+  schedule.scheduleJob('0 8 * * *', async () => {
+    try {
+      const GoalService = require('../services/GoalService');
+      await GoalService.checkGoalsAtRisk();
+    } catch (err) { console.error('[Freddy] checkGoalsAtRisk error:', err.message); }
+  });
+
+  // ── Daily 06:00: sync exchange rates ──────────────────────────────────────
+  schedule.scheduleJob('0 6 * * *', async () => {
+    try {
+      const CurrencyService = require('../services/CurrencyService');
+      await CurrencyService.fetchAndStoreRates('USD');
+    } catch (err) { console.error('[Freddy] syncExchangeRates error:', err.message); }
+  });
+
+  // ── 1st of month 01:00: monthly digest reports ────────────────────────────
+  schedule.scheduleJob('0 1 1 * *', async () => {
+    try { await generateMonthlyReports(); }
+    catch (err) { console.error('[Freddy] generateMonthlyReports error:', err.message); }
+  });
+
+  console.log('[Freddy] Jobs registered: checkBudgetThresholds, checkAnomalies, checkGoalsAtRisk, syncExchangeRates, generateMonthlyReports');
+}
+
+module.exports = registerPersonBJobs;
  
+
 // =============================================================================
 // APP CONFIGURATION
 // =============================================================================
@@ -160,8 +210,7 @@ async function getTransactions(userToken) {
 app.set("view engine", "ejs");
  
 app.use(express.static("public"));
- 
- 
+
 // =============================================================================
 // NEW: SECURITY MIDDLEWARE
 // Added helmet, CORS, and rate limiting — not present in the original server.
@@ -177,7 +226,7 @@ app.use(
         styleSrc:   ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
         fontSrc:    ["'self'", "fonts.gstatic.com"],
         connectSrc: ["'self'"],
-        imgSrc:     ["'self'", "data:"],
+        imgSrc: ["'self'", "data:", "https://ui-avatars.com"],
       },
     },
   })

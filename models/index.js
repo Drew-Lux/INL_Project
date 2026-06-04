@@ -1,24 +1,41 @@
-const mongoose = require("mongoose");
-const { Schema } = mongoose;
+const User                        = require("./User");
+const Account                     = require("./Account");
+const Transaction                 = require("./Transaction");
+const BudgetCategory              = require("./BudgetCategory");
+const PortfolioSnapshot           = require("./Portfolio");
+const Holding                     = require("./Holding");
+const AtlasSession                = require("./Atlas");
 
-const TransactionSchema = require("./Transaction");
-const BudgetCategorySchema = require("./BudgetCategory");
-const PortfolioSnapshotSchema = require("./Portfolio");
-const User = require("./User");
-const Account = require("./Account");
-const Holding = require("./Holding");
-const RecurringTransaction = require("./RecurringTransaction");
-const AuditLog = require("./AuditLog");
-const ScheduledTask = require("./ScheduledTask");
+// ── Person A models ───────────────────────────────────────────────────────────
+const RecurringTransaction        = require("./RecurringTransaction");
+const ScheduledTask               = require("./ScheduledTask");
+
+// ── Person B models ───────────────────────────────────────────────────────────
+const Goal                        = require('./Goal');
+const { AlertConfig, AlertEvent } = require('./Alert');
+const AuditLog                    = require('./AuditLog');
+const ExchangeRate                = require('./ExchangeRate');
+const Report                      = require('./Report');
 
 module.exports = {
-    User,
-    Account,
-    TransactionSchema,
-    Holding,
-    BudgetCategorySchema,
-    PortfolioSnapshotSchema,
-    RecurringTransaction,
-    AuditLog,
-    ScheduledTask,
-}
+  // Existing
+  User,
+  Account,
+  Transaction,
+  Holding,
+  BudgetCategory,
+  PortfolioSnapshot,
+  AtlasSession,
+
+  // Person A
+  RecurringTransaction,
+  ScheduledTask,
+
+  // Person B
+  Goal,
+  AlertConfig,
+  AlertEvent,
+  AuditLog,
+  ExchangeRate,
+  Report,
+};
